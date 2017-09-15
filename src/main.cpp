@@ -120,18 +120,16 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     long receivedTime = getNowTime();
     std::ostringstream sTick;
     // Measurement
-    sTick << tick->InstrumentID;
-
-    // Tags
-    sTick << ",source=CTP,date=" << tradingDate;
-
-    // Fields
-    sTick << " "
-            << "P=" << tick->LastPrice
-            << ",AccV=" << tick->Volume
-            << ",AccT=" << tick->Turnover
-            << ",AvgP=" << tick->AveragePrice
-            << ",OI=" << tick->OpenInterest;
+    sTick << tick->InstrumentID
+          // Tags
+          << ",source=CTP,date=" << tradingDate
+          // Fields
+          << " "
+          << "P=" << tick->LastPrice
+          << ",AccV=" << tick->Volume
+          << ",AccT=" << tick->Turnover
+          << ",AvgP=" << tick->AveragePrice
+          << ",OI=" << tick->OpenInterest;
 
     if (tick->BidVolume1>0) sTick << ",BP1=" << tick->BidPrice1 << ",BV1=" << tick->BidVolume1;
     if (tick->AskVolume1>0) sTick << ",AP1=" << tick->AskPrice1 << ",AV1=" << tick->AskVolume1;
@@ -144,13 +142,17 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     if (tick->BidVolume5>0) sTick << ",BP5=" << tick->BidPrice5 << ",BV5=" << tick->BidVolume5;
     if (tick->AskVolume5>0) sTick << ",AP5=" << tick->AskPrice5 << ",AV5=" << tick->AskVolume5;
 
-    // Fields only in pre-opening tick
-    if (tick->Volume == 0) sTick << ",ULP=" << tick->UpperLimitPrice << ",LLP=" << tick->LowerLimitPrice;
-    // Fields not in pre-opening tick
-    if (tick->HighestPrice != DBL_MAX) sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
-    // Fields only in closing ticks
-    if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
-    if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
+    if (tick->Volume == 0) { // Fields only in the pre-opening tick for last trading date
+        sTick << ",ULP=" << tick->UpperLimitPrice
+              << ",LLP=" << tick->LowerLimitPrice
+              << ",SP=" << tick->PreSettlementPrice
+              << ",D=" << tick->PreDelta;
+    } else { // Fields not in the pre-opening tick for current trading date
+        sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
+        // Fields only in closing ticks
+        if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
+        if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
+    }
 
     // Timestamp
     long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
@@ -166,7 +168,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
             long savedTime = getNowTime();
             printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
         } else {
-            printf("Failed to save tick into InfluxDB: [%d] %s", resp.code, resp.body.c_str());
+            printf("Failed to save tick into InfluxDB: [%d] %s\n", resp.code, resp.body.c_str());
         };
         logger->info("Tick Saved. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
     }
@@ -196,7 +198,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     } else if (h==0 && tmNow->tm_hour==23) {
         now += 3600;
         tmNow = localtime(&now);
-    } else if (h>18 && tmNow->tm_hour>6 && tmNow->tm_hour<9) { // Invalid
+    } else if (h>18 && tmNow->tm_hour>5 && tmNow->tm_hour<9) { // Invalid
         return -1;
     }
     // Parse DateTime
