@@ -151,8 +151,8 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
         sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
         // Fields only in closing ticks
         if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
-        if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
     }
+    if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
 
     // Timestamp
     long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
