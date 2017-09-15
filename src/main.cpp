@@ -10,7 +10,6 @@
 #include <csignal>
 #include <thread>
 #include <iostream>
-
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "cmdline/cmdline.h"
 #include "concurrentqueue/concurrentqueue.h"
@@ -159,7 +158,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
 
     if (ts<0) { // Ignore invalid tick
         printf("Tick ignored: Thread=%02d, Code=%s, UpdateTime=%s\n", processorId, tick->InstrumentID, tick->UpdateTime);
-        logger->info("Tick ignored. Code={}, TradingDay={}, ActionDay={}, UpdateTime={} | {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
+        logger->info("Tick Ignored. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
     } else { // Save to InfluxDB
         long latency = receivedTime-ts;
         RestClient::Response resp = RestClient::post(dbWriteUrl, "application/octet-stream", sTick.str());
@@ -167,9 +166,9 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
             long savedTime = getNowTime();
             printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
         } else {
-            std::cout << "Failed to save tick into InfluxDB: [" << resp.code << "] " << resp.body << std::endl;
+            printf("Failed to save tick into InfluxDB: [%d] %s", resp.code, resp.body.c_str());
         };
-        logger->info("Tick Saved. Code={}, TradingDay={}, ActionDay={}, UpdateTime={} | {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
+        logger->info("Tick Saved. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
     }
 }
 
@@ -197,7 +196,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     } else if (h==0 && tmNow->tm_hour==23) {
         now += 3600;
         tmNow = localtime(&now);
-    } else if (h>18 && tmNow->tm_hour>3 && tmNow->tm_hour<9) { // Invalid
+    } else if (h>18 && tmNow->tm_hour>6 && tmNow->tm_hour<9) { // Invalid
         return -1;
     }
     // Parse DateTime
