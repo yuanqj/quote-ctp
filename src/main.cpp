@@ -151,8 +151,8 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
         sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
         // Fields only in closing ticks
         if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
+        if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
     }
-    if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
 
     // Timestamp
     long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
@@ -191,19 +191,20 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
 
     // Convert ActionDay
     time_t now = time(0);
-    struct tm *tmNow = localtime(&now);
-    if (h==23 && tmNow->tm_hour==0) {
+    struct tm tmNow = {0};
+    localtime_r(&now, &tmNow);
+    if (h==23 && tmNow.tm_hour==0) {
         now -= 3600;
-        tmNow = localtime(&now);
-    } else if (h==0 && tmNow->tm_hour==23) {
+        localtime_r(&now, &tmNow);
+    } else if (h==0 && tmNow.tm_hour==23) {
         now += 3600;
-        tmNow = localtime(&now);
-    } else if (h>18 && tmNow->tm_hour>5 && tmNow->tm_hour<9) { // Invalid
+        localtime_r(&now, &tmNow);
+    } else if (h>18 && tmNow.tm_hour>5 && tmNow.tm_hour<9) { // Invalid
         return -1;
     }
     // Parse DateTime
-    sscanf(timeStr, "%2d:%2d:%2d", &tmNow->tm_hour, &tmNow->tm_min, &tmNow->tm_sec);
-    long ts = mktime(tmNow);
+    tmNow.tm_hour=h; tmNow.tm_min=m; tmNow.tm_sec=s;
+    long ts = mktime(&tmNow);
     return ts * 1000 + millisec;
 }
 
