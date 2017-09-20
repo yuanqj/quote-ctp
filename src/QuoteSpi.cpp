@@ -42,16 +42,10 @@ void QuoteSpi::OnFrontDisconnected(int nReason) {
     else if (nReason == 0x2002) reason = "发送心跳失败";
     else if (nReason == 0x2003) reason = "收到错误报文";
     printf("Front disconnected: [0x%x] %s\n", nReason, reason.c_str());
-
-    // Logout
-    CThostFtdcUserLogoutField req ={0};
-    strcpy(req.BrokerID, params.get<std::string>("broker").c_str());
-    strcpy(req.UserID, params.get<std::string>("investor").c_str());
-    quoteApi->ReqUserLogout(&req, ++this->reqID);
 }
 
 void QuoteSpi::OnHeartBeatWarning(int nTimeLapse){
-    printf("Heart beat warning: TimeLapse=%d", nTimeLapse);
+    printf("Heart beat warning: TimeLapse=%d\n", nTimeLapse);
 }
 
 void QuoteSpi::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {

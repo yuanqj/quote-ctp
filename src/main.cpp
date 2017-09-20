@@ -193,7 +193,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     time_t now = time(0);
     struct tm tmNow = {0};
     localtime_r(&now, &tmNow);
-    if (h==23 && tmNow.tm_hour==0) {
+    if (h==23 && tmNow.tm_hour==0 && tmNow.tm_min<10) {
         now -= 3600;
         localtime_r(&now, &tmNow);
     } else if (h==0 && tmNow.tm_hour==23) {
