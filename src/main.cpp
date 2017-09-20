@@ -199,7 +199,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     } else if (h==0 && tmNow.tm_hour==23) {
         now += 3600;
         localtime_r(&now, &tmNow);
-    } else if (h>18 && tmNow.tm_hour>5 && tmNow.tm_hour<9) { // Invalid
+    } else if (h>18 && tmNow.tm_hour<9) { // Invalid
         return -1;
     }
     // Parse DateTime
