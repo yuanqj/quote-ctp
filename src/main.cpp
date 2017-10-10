@@ -119,6 +119,9 @@ void processData(int n) {
 void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     long receivedTime = getNowTime();
     std::ostringstream sTick;
+    // Set precision/format for double
+    sTick << std::fixed << std::setprecision(10);
+
     // Measurement
     sTick << tick->InstrumentID
           // Tags
@@ -128,7 +131,6 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
           << "P=" << tick->LastPrice
           << ",AccV=" << tick->Volume
           << ",AccT=" << tick->Turnover
-          << ",AvgP=" << tick->AveragePrice
           << ",OI=" << tick->OpenInterest;
 
     if (tick->BidVolume1>0) sTick << ",BP1=" << tick->BidPrice1 << ",BV1=" << tick->BidVolume1;
