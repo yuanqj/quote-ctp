@@ -158,6 +158,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
 
     // Timestamp
     long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
+    if (ts < 0) return; // Invalid timestamp
     sTick << " " << ts;
 
     if (ts<0) { // Ignore invalid tick
