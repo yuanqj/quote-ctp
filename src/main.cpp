@@ -17,7 +17,7 @@
 #include "Logging.hpp"
 #include "QuoteSpi.hpp"
 
-#define PROCESSOR_COUNT 6
+#define PROCESSOR_COUNT 2
 
 void configCliParser(int argc, char** argv);
 void parseCodes(std::string str, char sep);
@@ -28,16 +28,19 @@ void parseData(CThostFtdcDepthMarketDataField* data, int processorId);
 long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec);
 long getNowTime(void);
 std::string genUUID();
+int getCodeIdx(const char* code);
 
 std::string uuid;
 cmdline::parser params;
 CThostFtdcMdApi* quoteApi;
 char** codes;
 unsigned long codeCount;
+long *lastTS;
 std::atomic<bool> running(true);
 moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> dataQueue(1024);
 std::string dbWriteUrl;
 int tradingDate = 0;
+int fromCZCE;
 
 
 int main(int argc, char** argv) {
@@ -50,6 +53,7 @@ int main(int argc, char** argv) {
     configCliParser(argc, argv);
     initSpdLog(uuid, params.get<std::string>("path-logs") + "Quote-CTP_" + uuid + ".log");
     dbWriteUrl = params.get<std::string>("db-url") + "/write?precision=ms&db=" + params.get<std::string>("db-name");
+    fromCZCE = params.get<int>("from-czce");
 
     std::thread dataProcessors[PROCESSOR_COUNT];
     setupCTP();
@@ -70,6 +74,7 @@ void configCliParser(int argc, char** argv) {
     params.add<std::string>("investor", 0, "Investor ID", true, "");
     params.add<std::string>("password", 0, "Investor password", true, "");
     params.add<std::string>("codes", 0, "Instrument codes to subscribe which separated with \";\"", true, "");
+    params.add<int>("from-czce", 0, "Is any of the instruments from CZCE", false, 0);
     params.add<std::string>("db-url", 0, "InfluxDB server URL", true, "");
     params.add<std::string>("db-name", 0, "InfluxDB database name", true, "");
     params.add<std::string>("path-conn", 0, "Temp path for storing connection flow", true, "");
@@ -88,6 +93,8 @@ void setupCTP(){
     char frontAddr[frontAddrStr.length() + 1];
     strcpy(frontAddr, frontAddrStr.c_str());
     parseCodes(params.get<std::string>("codes"), ';');
+    lastTS = new long[codeCount];
+    for (int i = 0; i < codeCount; ++i) lastTS[i] = -1;
 
     std::string prefix=params.get<std::string>("path-conn")+uuid+"_";
     quoteApi = CThostFtdcMdApi::CreateFtdcMdApi(prefix.c_str());
@@ -120,7 +127,29 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     long receivedTime = getNowTime();
     std::ostringstream sTick;
     // Set precision/format for double
-    sTick << std::fixed << std::setprecision(10);
+    sTick << std::fixed << std::setprecision(4);
+
+    // Parse Timestamp
+    long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
+    if (ts < 0) { // Invalid timestamp
+        printf("Tick ignored: Thread=%02d, Code=%s, UpdateTime=%s\n", processorId, tick->InstrumentID, tick->UpdateTime);
+        logger->info("Tick Ignored. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
+        return;
+    }
+    if (fromCZCE) {
+        int codeIdx = getCodeIdx(tick->InstrumentID);
+        if (codeIdx<0){
+            printf("Unknown code received: %s\n", tick->InstrumentID);
+            return;
+        }
+        if (ts <= lastTS[codeIdx]) {
+            if (tick->Volume<=0) return;
+            lastTS[codeIdx] += 100;
+            ts = lastTS[codeIdx];
+        } else {
+            lastTS[codeIdx] = ts;
+        }
+    }
 
     // Measurement
     sTick << tick->InstrumentID
@@ -157,24 +186,18 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     }
 
     // Timestamp
-    long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
-    if (ts < 0) return; // Invalid timestamp
     sTick << " " << ts;
 
-    if (ts<0) { // Ignore invalid tick
-        printf("Tick ignored: Thread=%02d, Code=%s, UpdateTime=%s\n", processorId, tick->InstrumentID, tick->UpdateTime);
-        logger->info("Tick Ignored. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
-    } else { // Save to InfluxDB
-        long latency = receivedTime-ts;
-        RestClient::Response resp = RestClient::post(dbWriteUrl, "application/octet-stream", sTick.str());
-        if (resp.code >= 200 && resp.code < 300) {
-            long savedTime = getNowTime();
-            printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
-        } else {
-            printf("Failed to save tick into InfluxDB: [%d] %s\n", resp.code, resp.body.c_str());
-        };
+    // Save to InfluxDB
+    long latency = receivedTime-ts;
+    RestClient::Response resp = RestClient::post(dbWriteUrl, "application/octet-stream", sTick.str());
+    if (resp.code >= 200 && resp.code < 300) {
+        long savedTime = getNowTime();
+        printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
         logger->info("Tick Saved. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
-    }
+    } else {
+        printf("Failed to save tick into InfluxDB: [%d] %s\n", resp.code, resp.body.c_str());
+    };
 }
 
 /*** ActionDay:
@@ -242,4 +265,12 @@ std::string genUUID() {
     char uuid_str[37];
     uuid_unparse_lower(uuid, uuid_str);
     return std::string(uuid_str);
+}
+
+int getCodeIdx(const char* code) {
+    for (int i=0; i<codeCount; i++) {
+        if(strcmp(code, codes[i])==0) return i;
+    }
+    logger->error("Unknown code to latest index. Code={}", code);
+    return -1;
 }
