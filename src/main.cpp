@@ -133,7 +133,6 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
     if (ts < 0) { // Invalid timestamp
         printf("Tick ignored: Thread=%02d, Code=%s, UpdateTime=%s\n", processorId, tick->InstrumentID, tick->UpdateTime);
-        logger->info("Tick Ignored. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
         return;
     }
     if (fromCZCE) {
@@ -194,7 +193,6 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     if (resp.code >= 200 && resp.code < 300) {
         long savedTime = getNowTime();
         printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
-        logger->info("Tick Saved. Code={}, TradingDay={}, ActionDay={}, UpdateTime={}, [InfluxDB] {}", tick->InstrumentID, tick->TradingDay, tick->ActionDay, tick->UpdateTime, sTick.str());
     } else {
         printf("Failed to save tick into InfluxDB: [%d] %s\n", resp.code, resp.body.c_str());
     };
@@ -225,7 +223,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     } else if (h==0 && tmNow.tm_hour==23) {
         now += 3600;
         localtime_r(&now, &tmNow);
-    } else if (h>18 && tmNow.tm_hour<9) { // Invalid
+    } else if (h>16 && tmNow.tm_hour<9) { // Invalid
         return -1;
     }
     // Parse DateTime
