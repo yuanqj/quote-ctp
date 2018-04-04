@@ -10,12 +10,11 @@
 #include <csignal>
 #include <thread>
 #include <iostream>
-#include "ctpapi/ThostFtdcMdApi.h"
-#include "cmdline/cmdline.h"
-#include "concurrentqueue/concurrentqueue.h"
-#include "restclient-cpp/restclient.h"
-#include "Logging.hpp"
-#include "QuoteSpi.hpp"
+#include <ctpapi/ThostFtdcMdApi.h>
+#include <cmdline/cmdline.h>
+#include <concurrentqueue/concurrentqueue.h>
+#include <restclient-cpp/restclient.h>
+#include "quote_spi.hpp"
 
 #define PROCESSOR_COUNT 2
 
@@ -51,7 +50,6 @@ int main(int argc, char** argv) {
     signal(SIGINT, terminationSignalHandler);
     signal(SIGTERM, terminationSignalHandler);
     configCliParser(argc, argv);
-    initSpdLog(uuid, params.get<std::string>("path-logs") + "Quote-CTP_" + uuid + ".log");
     dbWriteUrl = params.get<std::string>("db-url") + "/write?precision=ms&db=" + params.get<std::string>("db-name");
     fromCZCE = params.get<int>("from-czce");
 
@@ -78,7 +76,6 @@ void configCliParser(int argc, char** argv) {
     params.add<std::string>("db-url", 0, "InfluxDB server URL", true, "");
     params.add<std::string>("db-name", 0, "InfluxDB database name", true, "");
     params.add<std::string>("path-conn", 0, "Temp path for storing connection flow", true, "");
-    params.add<std::string>("path-logs", 0, "Full path for storing logs file", true, "");
     params.parse_check(argc, argv);
 }
 
@@ -98,7 +95,7 @@ void setupCTP(){
 
     std::string prefix=params.get<std::string>("path-conn")+uuid+"_";
     quoteApi = CThostFtdcMdApi::CreateFtdcMdApi(prefix.c_str());
-    QuoteSpi* quoteSpi = new QuoteSpi();
+    quote_spi* quoteSpi = new quote_spi();
     quoteApi->RegisterSpi((CThostFtdcMdSpi*)quoteSpi);
 
     quoteApi->RegisterFront(frontAddr);
@@ -269,6 +266,6 @@ int getCodeIdx(const char* code) {
     for (int i=0; i<codeCount; i++) {
         if(strcmp(code, codes[i])==0) return i;
     }
-    logger->error("Unknown code to latest index. Code={}", code);
+    printf("Unknown code: %s!\n", code);
     return -1;
 }
