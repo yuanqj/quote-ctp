@@ -20,7 +20,7 @@
 
 void configCliParser(int argc, char** argv);
 void parseCodes(std::string str, char sep);
-void terminationSignalHandler(int signum);
+void termSigHandler(int signum);
 void setupCTP();
 void processData(int n);
 void parseData(CThostFtdcDepthMarketDataField* data, int processorId);
@@ -33,8 +33,8 @@ std::string uuid;
 cmdline::parser params;
 CThostFtdcMdApi* quoteApi;
 char** codes;
-unsigned long codeCount;
-long *lastTS;
+int codeCount;
+long long *lastTS;
 std::atomic<bool> running(true);
 moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> dataQueue(1024);
 std::string dbWriteUrl;
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
     uuid = genUUID();
     std::cout << "UUID: " << uuid << std::endl;
 
-    signal(SIGINT, terminationSignalHandler);
-    signal(SIGTERM, terminationSignalHandler);
+    signal(SIGINT, termSigHandler);
+    signal(SIGTERM, termSigHandler);
     configCliParser(argc, argv);
     dbWriteUrl = params.get<std::string>("db-url") + "/write?precision=ms&db=" + params.get<std::string>("db-name");
     fromCZCE = params.get<int>("from-czce");
@@ -79,7 +79,7 @@ void configCliParser(int argc, char** argv) {
     params.parse_check(argc, argv);
 }
 
-void terminationSignalHandler(int signum) {
+void termSigHandler(int signum) {
     printf("Termination signal received\n");
     running.store(false, std::memory_order_release);
 }
@@ -90,7 +90,7 @@ void setupCTP(){
     char frontAddr[frontAddrStr.length() + 1];
     strcpy(frontAddr, frontAddrStr.c_str());
     parseCodes(params.get<std::string>("codes"), ';');
-    lastTS = new long[codeCount];
+    lastTS = new long long[codeCount];
     for (int i = 0; i < codeCount; ++i) lastTS[i] = -1;
 
     std::string prefix=params.get<std::string>("path-conn")+uuid+"_";
@@ -246,7 +246,7 @@ void parseCodes(std::string str, char sep) {
         *(std::back_inserter(elems)++) = item;
     }
 
-    codeCount = elems.size();
+    codeCount = (int)elems.size();
     codes = new char*[codeCount];
     for(int i=0;i<codeCount;i++){
         codes[i]=new char[elems[i].length()+1];

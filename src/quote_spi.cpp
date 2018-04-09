@@ -3,7 +3,7 @@
 extern cmdline::parser params;
 extern CThostFtdcMdApi* quoteApi;
 extern char** codes;
-extern unsigned long codeCount;
+extern int codeCount;
 extern int tradingDate;
 extern moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> dataQueue;
 
