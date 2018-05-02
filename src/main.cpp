@@ -28,6 +28,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
 long getNowTime(void);
 std::string genUUID();
 int getCodeIdx(const char* code);
+void ConvertCode(CThostFtdcDepthMarketDataField* tick);
 
 std::string uuid;
 cmdline::parser params;
@@ -39,7 +40,7 @@ std::atomic<bool> running(true);
 moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> dataQueue(1024);
 std::string dbWriteUrl;
 int tradingDate = 0;
-int fromCZCE;
+int fromCZCE, isMain;
 
 
 int main(int argc, char** argv) {
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
     configCliParser(argc, argv);
     dbWriteUrl = params.get<std::string>("db-url") + "/write?precision=ms&db=" + params.get<std::string>("db-name");
     fromCZCE = params.get<int>("from-czce");
+    isMain = params.get<int>("is-main");
 
     std::thread dataProcessors[PROCESSOR_COUNT];
     setupCTP();
@@ -72,6 +74,7 @@ void configCliParser(int argc, char** argv) {
     params.add<std::string>("investor", 0, "Investor ID", true, "");
     params.add<std::string>("password", 0, "Investor password", true, "");
     params.add<std::string>("codes", 0, "Instrument codes to subscribe which separated with \";\"", true, "");
+    params.add<int>("is-main", 0, "Is this for main instrument", false, 0);
     params.add<int>("from-czce", 0, "Is any of the instruments from CZCE", false, 0);
     params.add<std::string>("db-url", 0, "InfluxDB server URL", true, "");
     params.add<std::string>("db-name", 0, "InfluxDB database name", true, "");
@@ -148,6 +151,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     }
 
     // Measurement
+    ConvertCode(tick);
     sTick << tick->InstrumentID
           // Tags
           << ",source=CTP,date=" << tradingDate
@@ -268,4 +272,20 @@ int getCodeIdx(const char* code) {
     }
     printf("Unknown code: %s!\n", code);
     return -1;
+}
+
+void ConvertCode(CThostFtdcDepthMarketDataField* tick) {
+    if (!isMain) return;
+    int num_idx=0;
+    for (int i = 0; i < 31; ++i) {
+        if (tick->InstrumentID[i]>='0' && tick->InstrumentID[i]<='9') {
+            num_idx = i;
+            break;
+        }
+    }
+    if (num_idx > 0 && num_idx<=28) {
+        tick->InstrumentID[num_idx] = '0';
+        tick->InstrumentID[num_idx+1] = '0';
+        tick->InstrumentID[num_idx+2] = '\0';
+    }
 }
