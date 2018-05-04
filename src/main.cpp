@@ -1,7 +1,6 @@
 #include <float.h>
 #include <stdio.h>
 #include <string.h>
-#include <uuid/uuid.h>
 #include <ctime>
 #include <queue>
 #include <random>
@@ -10,6 +9,7 @@
 #include <csignal>
 #include <thread>
 #include <iostream>
+#include <uuid/uuid.h>
 #include <ctpapi/ThostFtdcMdApi.h>
 #include <cmdline/cmdline.h>
 #include <concurrentqueue/concurrentqueue.h>
@@ -139,6 +139,10 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
         int codeIdx = getCodeIdx(tick->InstrumentID);
         if (codeIdx<0){
             printf("Unknown code received: %s\n", tick->InstrumentID);
+            return;
+        }
+        if (lastTS[codeIdx] - ts > 500) {
+            printf("Tick ignored for CZCE (too many ticks): Code=%s, UpdateTime=%s\n", tick->InstrumentID, tick->UpdateTime);
             return;
         }
         if (ts <= lastTS[codeIdx]) {
