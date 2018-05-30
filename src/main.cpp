@@ -180,13 +180,11 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     if (tick->Volume == 0) { // Fields only in the pre-opening tick for last trading date
         sTick << ",ULP=" << tick->UpperLimitPrice
               << ",LLP=" << tick->LowerLimitPrice
-              << ",SP=" << tick->PreSettlementPrice
-              << ",D=" << tick->PreDelta;
+              << ",SP=" << tick->PreSettlementPrice;
     } else { // Fields not in the pre-opening tick for current trading date
         sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
         // Fields only in closing ticks
         if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
-        if (tick->CurrDelta != DBL_MAX) sTick << ",D=" << tick->CurrDelta;
     }
 
     // Timestamp
