@@ -24,7 +24,7 @@ void termSigHandler(int signum);
 void setupCTP();
 void processData(int n);
 void parseData(CThostFtdcDepthMarketDataField* data, int processorId);
-long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec);
+long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec, TThostFtdcVolumeType volume);
 long getNowTime(void);
 std::string genUUID();
 int getCodeIdx(const char* code);
@@ -130,7 +130,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
     sTick << std::fixed << std::setprecision(4);
 
     // Parse Timestamp
-    long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec);
+    long ts = parseDatetime(tick->ActionDay, tick->UpdateTime, tick->UpdateMillisec, tick->Volume);
     if (ts < 0) { // Invalid timestamp
         printf("Tick ignored: Thread=%02d, Code=%s, UpdateTime=%s\n", processorId, tick->InstrumentID, tick->UpdateTime);
         return;
@@ -212,14 +212,18 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
  *     TradingDay: 行情日
  *     ActionDay: 行情日
  */
-long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec) {
-    int h, m, s;
-    sscanf(timeStr, "%2d:%2d:%2d", &h, &m, &s);
-
+long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec, TThostFtdcVolumeType volume) {
     // Convert ActionDay
     time_t now = time(0);
     struct tm tmNow = {0};
     localtime_r(&now, &tmNow);
+
+    // Invalid tick in non-trading periods
+    bool non_trading = (tmNow.tm_wday==6 && tmNow.tm_hour>8) || tmNow.tm_wday==0 || (tmNow.tm_wday==1 && tmNow.tm_hour<8);
+    if (non_trading && volume > 0) return -1;
+
+    int h, m, s;
+    sscanf(timeStr, "%2d:%2d:%2d", &h, &m, &s);
     if (h==23 && tmNow.tm_hour==0 && tmNow.tm_min<10) {
         now -= 3600;
         localtime_r(&now, &tmNow);
