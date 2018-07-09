@@ -8,7 +8,7 @@
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "iconv/iconv.h"
 
-class quote_spi : public CThostFtdcMdSpi
+class QuoteSpi : public CThostFtdcMdSpi
 {
 public:
     ///当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。

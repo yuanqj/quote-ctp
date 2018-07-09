@@ -25,16 +25,16 @@ std::string parseErrorMsg(TThostFtdcErrorMsgType msg) {
     return std::string(utf8Str);
 }
 
-void quote_spi::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void QuoteSpi::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
     parseErrorRspInfo(pRspInfo);
 }
 
-void quote_spi::OnFrontConnected(){
+void QuoteSpi::OnFrontConnected(){
     login();
 }
 
-void quote_spi::OnFrontDisconnected(int nReason) {
+void QuoteSpi::OnFrontDisconnected(int nReason) {
     std::string reason = "Unknown";
     if (nReason == 0x1001) reason = "网络读失败";
     else if (nReason == 0x1002) reason = "网络写失败";
@@ -44,11 +44,11 @@ void quote_spi::OnFrontDisconnected(int nReason) {
     printf("Front disconnected: [0x%x] %s\n", nReason, reason.c_str());
 }
 
-void quote_spi::OnHeartBeatWarning(int nTimeLapse){
+void QuoteSpi::OnHeartBeatWarning(int nTimeLapse){
     printf("Heart beat warning: TimeLapse=%d\n", nTimeLapse);
 }
 
-void quote_spi::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+void QuoteSpi::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
     if (bIsLast && !parseErrorRspInfo(pRspInfo)) {
         tradingDate = atoi(pRspUserLogin->TradingDay);
         std::cout << "Login! TradingDate: " << tradingDate <<std::endl;
@@ -56,22 +56,22 @@ void quote_spi::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThos
     }
 }
 
-void quote_spi::OnRspUserLogout(CThostFtdcUserLogoutField *pUserLogout, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+void QuoteSpi::OnRspUserLogout(CThostFtdcUserLogoutField *pUserLogout, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
     printf("Already logout!\n");
     tradingDate = 0;
 }
 
-void quote_spi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void QuoteSpi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
     std::cout << "Subscribe: " << pSpecificInstrument->InstrumentID << " (" << parseErrorMsg(pRspInfo->ErrorMsg) << ")" << std::endl;
 }
 
-void quote_spi::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void QuoteSpi::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
     std::cout << "Func: " << __FUNCTION__ << std::endl;
 }
 
-void quote_spi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketData) {
+void QuoteSpi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketData) {
     CThostFtdcDepthMarketDataField* data = (CThostFtdcDepthMarketDataField*)memcpy(
             new u_char[sizeof(CThostFtdcDepthMarketDataField)],
             pDepthMarketData,
@@ -80,7 +80,7 @@ void quote_spi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarke
     dataQueue.enqueue(data);
 }
 
-bool quote_spi::parseErrorRspInfo(CThostFtdcRspInfoField *pRspInfo)
+bool QuoteSpi::parseErrorRspInfo(CThostFtdcRspInfoField *pRspInfo)
 {
     bool isErr = pRspInfo && pRspInfo->ErrorID != 0;
     if (isErr) printf("Response error: ErrorID=%d, ErrorMsg=%s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
@@ -88,22 +88,22 @@ bool quote_spi::parseErrorRspInfo(CThostFtdcRspInfoField *pRspInfo)
 }
 
 
-void quote_spi::OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void QuoteSpi::OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
     std::cout << "Subscribe: " << pSpecificInstrument->InstrumentID << " " << parseErrorMsg(pRspInfo->ErrorMsg) << std::endl;
 }
 
-void quote_spi::OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void QuoteSpi::OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
     std::cout << "Func: " << __FUNCTION__ << std::endl;
 }
 
-void quote_spi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *pForQuoteRsp)
+void QuoteSpi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *pForQuoteRsp)
 {
     std::cout << "Func: " << __FUNCTION__ << std::endl;
 }
 
-void quote_spi::login()
+void QuoteSpi::login()
 {
     CThostFtdcReqUserLoginField req;
     memset(&req, 0, sizeof(req));
@@ -114,7 +114,7 @@ void quote_spi::login()
     printf("Login %s!\n", (res==0) ? "successfully" : "failed");
 }
 
-void quote_spi::subscribe()
+void QuoteSpi::subscribe()
 {
     int res = quoteApi->SubscribeMarketData(codes, codeCount);
     printf("Subscribe %s!\n", (res==0) ? "successfully" : "failed");

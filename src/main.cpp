@@ -98,7 +98,7 @@ void setupCTP(){
 
     std::string prefix=params.get<std::string>("path-conn")+uuid+"_";
     quoteApi = CThostFtdcMdApi::CreateFtdcMdApi(prefix.c_str());
-    quote_spi* quoteSpi = new quote_spi();
+    QuoteSpi* quoteSpi = new QuoteSpi();
     quoteApi->RegisterSpi((CThostFtdcMdSpi*)quoteSpi);
 
     quoteApi->RegisterFront(frontAddr);
