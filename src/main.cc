@@ -141,7 +141,8 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
             printf("Unknown code received: %s\n", tick->InstrumentID);
             return;
         }
-        if (lastTS[codeIdx] - ts > 500) {
+        ts += 100;
+        if (lastTS[codeIdx] - ts > 900) {
             printf("Tick ignored for CZCE (too many ticks): Code=%s, UpdateTime=%s\n", tick->InstrumentID, tick->UpdateTime);
             return;
         }
