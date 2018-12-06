@@ -23,7 +23,7 @@ void parseCodes(std::string str, char sep);
 void termSigHandler(int signum);
 void setupCTP();
 void processData(int n);
-void parseData(CThostFtdcDepthMarketDataField* data, int processorId);
+void parseData(CThostFtdcDepthMarketDataField* tick, int processorId);
 long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThostFtdcMillisecType millisec, TThostFtdcVolumeType volume);
 long getNowTime(void);
 std::string genUUID();
@@ -198,7 +198,7 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
         long savedTime = getNowTime();
         printf("Tick saved: Thread=%02d, Code=%s, LatencyRecv=%ld, LatencySave=%ld\n", processorId, tick->InstrumentID, latency, savedTime-receivedTime);
     } else {
-        printf("Failed to save tick into InfluxDB: [%d] %s\n", resp.code, resp.body.c_str());
+        printf("******** Failed to save tick [%d]: %s\n> %s\n", resp.code, resp.body.c_str(), sTick.str().c_str());
     };
 }
 
@@ -220,7 +220,7 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     localtime_r(&now, &tmNow);
 
     // Invalid tick in non-trading periods
-    bool non_trading = (tmNow.tm_wday==6 && tmNow.tm_hour>8) || tmNow.tm_wday==0 || (tmNow.tm_wday==1 && tmNow.tm_hour<8);
+    bool non_trading = (tmNow.tm_wday==6 && tmNow.tm_hour>8) || tmNow.tm_wday==0 || (tmNow.tm_wday==1 && tmNow.tm_hour<8) || (tmNow.tm_hour>=5 && tmNow.tm_hour<8) || (tmNow.tm_hour>=17 && tmNow.tm_hour<20);
     if (non_trading && volume > 0) return -1;
 
     int h, m, s;
@@ -240,8 +240,8 @@ long parseDatetime(TThostFtdcDateType dateStr, TThostFtdcTimeType timeStr, TThos
     return ts * 1000 + millisec;
 }
 
-long getNowTime(void) {
-    struct timespec spec;
+long getNowTime() {
+    struct timespec spec{0};
     clock_gettime(CLOCK_REALTIME, &spec);
     long ms = (long)(spec.tv_nsec / 1e6);
     return spec.tv_sec * 1000 + ms;
