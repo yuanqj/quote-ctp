@@ -167,25 +167,35 @@ void parseData(CThostFtdcDepthMarketDataField* tick, int processorId) {
           << ",AccT=" << tick->Turnover
           << ",OI=" << tick->OpenInterest;
 
-    if (tick->BidVolume1>0) sTick << ",BP1=" << tick->BidPrice1 << ",BV1=" << tick->BidVolume1;
-    if (tick->AskVolume1>0) sTick << ",AP1=" << tick->AskPrice1 << ",AV1=" << tick->AskVolume1;
-    if (tick->BidVolume2>0) sTick << ",BP2=" << tick->BidPrice2 << ",BV2=" << tick->BidVolume2;
-    if (tick->AskVolume2>0) sTick << ",AP2=" << tick->AskPrice2 << ",AV2=" << tick->AskVolume2;
-    if (tick->BidVolume3>0) sTick << ",BP3=" << tick->BidPrice3 << ",BV3=" << tick->BidVolume3;
-    if (tick->AskVolume3>0) sTick << ",AP3=" << tick->AskPrice3 << ",AV3=" << tick->AskVolume3;
-    if (tick->BidVolume4>0) sTick << ",BP4=" << tick->BidPrice4 << ",BV4=" << tick->BidVolume4;
-    if (tick->AskVolume4>0) sTick << ",AP4=" << tick->AskPrice4 << ",AV4=" << tick->AskVolume4;
-    if (tick->BidVolume5>0) sTick << ",BP5=" << tick->BidPrice5 << ",BV5=" << tick->BidVolume5;
-    if (tick->AskVolume5>0) sTick << ",AP5=" << tick->AskPrice5 << ",AV5=" << tick->AskVolume5;
+    if (tick->AskVolume1>0) {
+        sTick << ",AP1=" << tick->AskPrice1 << ",AV1=" << tick->AskVolume1;
+    } else {
+        sTick << ",AP1=" << 0 << ",AV1=" << 0;
+    }
+    if (tick->BidVolume1>0) {
+        sTick << ",BP1=" << tick->BidPrice1 << ",BV1=" << tick->BidVolume1;
+    } else {
+        sTick << ",BP1=" << 0 << ",BV1=" << 0;
+    }
 
     if (tick->Volume == 0) { // Fields only in the pre-opening tick for last trading date
         sTick << ",ULP=" << tick->UpperLimitPrice
               << ",LLP=" << tick->LowerLimitPrice
+              << ",HP=" << 0
+              << ",LP=" << 0
               << ",SP=" << tick->PreSettlementPrice;
     } else { // Fields not in the pre-opening tick for current trading date
         sTick << ",HP=" << tick->HighestPrice << ",LP=" << tick->LowestPrice;
+        sTick << ",ULP=" << 0
+              << ",LLP=" << 0
+              << ",HP=" << tick->HighestPrice
+              << ",LP=" << tick->LowestPrice;
         // Fields only in closing ticks
-        if (tick->SettlementPrice != DBL_MAX) sTick << ",SP=" << tick->SettlementPrice;
+        if (tick->SettlementPrice == DBL_MAX) {
+            sTick << ",SP=" << 0;
+        } else {
+            sTick << ",SP=" << tick->SettlementPrice;
+        }
     }
 
     // Timestamp
