@@ -16,46 +16,45 @@
 #include <restclient-cpp/restclient.h>
 #include "quote_client.hh"
 
-std::string gen_uuid();
-void config_cli(int argc, char** argv);
-std::vector<std::string> parse_instruments(const std::string *str, char sep);
+std::string *gen_uuid();
+cmdline::parser* config_cli(int argc, char** argv);
+std::vector<std::string> *parse_instruments(const std::string *str, char sep);
 void term_sig_handler(int signum);
 
-std::string uuid;
-cmdline::parser *params;
 QuoteClient *client;
 
 
 int main(int argc, char** argv) {
-    printf("Quote-CTP starts......\n");
-    uuid = gen_uuid();
-    std::cout << "UUID: " << uuid << std::endl;
+    std::string *uuid = gen_uuid();
+    std::cout << std::endl << "Quote-CTP Starts: " << *uuid << std::endl;
 
     signal(SIGINT, term_sig_handler);
     signal(SIGTERM, term_sig_handler);
-    params = new cmdline::parser();
-    config_cli(argc, argv);
+    cmdline::parser *params = config_cli(argc, argv);
 
     auto instruments = parse_instruments(&params->get<std::string>("instruments"), ';');
     client = new QuoteClient(
+            uuid,
             &params->get<std::string>("broker"),
             &params->get<std::string>("investor"),
             &params->get<std::string>("password"),
             &params->get<std::string>("front-addr"),
-            &instruments,
+            instruments,
             &params->get<std::string>("path-conn"),
-            &params->get<std::string>("path-conn")
+            &params->get<std::string>("path-data")
     );
-    client->init();
-    client->wait();
+    client->run();
 
+    std::cout << std::endl << "Quote-CTP Ends: " << *uuid << std::endl;
     delete(client);
     delete(params);
-    printf("Quote-CTP ends......\n");
+    delete(instruments);
+    delete(uuid);
     return 0;
 }
 
-void config_cli(int argc, char** argv) {
+cmdline::parser *config_cli(int argc, char** argv) {
+    auto *params = new cmdline::parser();
     params->add<std::string>("broker", 0, "Broker ID", true, "");
     params->add<std::string>("investor", 0, "Investor ID", true, "");
     params->add<std::string>("password", 0, "Investor password", true, "");
@@ -64,11 +63,12 @@ void config_cli(int argc, char** argv) {
     params->add<std::string>("path-conn", 0, "File path for storing connection flow", true, "");
     params->add<std::string>("path-data", 0, "File path for storing tick data", true, "");
     params->parse_check(argc, argv);
+    return params;
 }
 
 void term_sig_handler(int signum) {
-    printf("\nTermination signal received\n\n");
-    if (client) client->stop();
+    std::cout << std::endl << "Termination signal received["<< signum <<"]." << std::endl;
+    client->stop();
 }
 
 /*** ActionDay:
@@ -116,22 +116,22 @@ long getNowTime() {
     return spec.tv_sec * 1000 + ms;
 }
 
-std::vector<std::string> parse_instruments(const std::string *str, char sep) {
+std::vector<std::string> *parse_instruments(const std::string *str, char sep) {
     std::stringstream ss;
     ss.str(*str);
 
     std::string item;
-    std::vector<std::string> instruments;
+    auto *instruments = new std::vector<std::string>();
     while (std::getline(ss, item, sep)) {
-        *(std::back_inserter(instruments)++) = item;
+        *(std::back_inserter(*instruments)++) = item;
     }
     return instruments;
 }
 
-std::string gen_uuid() {
+std::string *gen_uuid() {
     uuid_t uuid = {0};
     uuid_generate_time_safe(uuid);
-    char uuid_str[37];
+    auto *uuid_str=new char[37];
     uuid_unparse_lower(uuid, uuid_str);
-    return std::string(uuid_str);
+    return new std::string(uuid_str);
 }

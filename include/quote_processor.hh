@@ -11,13 +11,13 @@ class QuoteProcessor {
 public:
     QuoteProcessor(const std::string *data_path);
     ~QuoteProcessor();
-    void set_date(int date);
+    void set_date(uint date);
     bool on_tick(CThostFtdcDepthMarketDataField *tick);
-    void wait();
+    void join();
     void stop();
 
 private:
-    int date;
+    std::atomic<uint> *date;
     boost::filesystem::path data_path;
     std::thread *processor;
     std::atomic<bool> *running;

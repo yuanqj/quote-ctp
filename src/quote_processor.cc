@@ -16,15 +16,16 @@ QuoteProcessor::~QuoteProcessor() {
     delete(this->running);
 }
 
-void QuoteProcessor::set_date(int date) {
-    if (date == this->date) return;
-    this->date = date;
-    if (this->date == 0) return;
-    boost::filesystem::path data_dir(std::to_string(this->date));
+void QuoteProcessor::set_date(uint date) {
+    uint date0 = this->date->load(std::memory_order_acquire);
+    if (date != date0) return;
+    this->date->store(date, std::memory_order_acquire);
+    if (date == 0) return;
+    boost::filesystem::path data_dir(std::to_string(date));
     boost::filesystem::create_directory(this->data_path/data_dir);
 }
 
-void QuoteProcessor::wait() {
+void QuoteProcessor::join() {
     this->processor->join();
 }
 
@@ -33,7 +34,7 @@ void QuoteProcessor::stop() {
 }
 
 bool QuoteProcessor::on_tick(CThostFtdcDepthMarketDataField *tick) {
-    if (!this->running->load(std::memory_order_acquire) || this->date <= 0) return false;
+    if (!this->running->load(std::memory_order_acquire) || this->date->load(std::memory_order_acquire) <= 0) return false;
     this->buff->enqueue(tick);
     return true;
 }
