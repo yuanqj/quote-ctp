@@ -1,16 +1,33 @@
+#ifndef __QUOTE_CLIENT_HH__
+#define __QUOTE_CLIENT_HH__
+
+#include "quote_processor.hh"
+
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <ctpapi/ThostFtdcMdApi.h>
 
-#include "cmdline/cmdline.h"
-#include "concurrentqueue/concurrentqueue.h"
-#include "ctpapi/ThostFtdcMdApi.h"
-#include "iconv/iconv.h"
-
-class QuoteSpi : public CThostFtdcMdSpi
+class QuoteClient : public CThostFtdcMdSpi
 {
 public:
+    QuoteClient(
+            const std::string *broker,
+            const std::string *investor,
+            const std::string *password,
+            const std::string *front_addr,
+            std::vector<std::string> *instruments,
+            const std::string *path_conn,
+            const std::string *path_data
+    );
+    ~QuoteClient();
+
+    void init();
+    void wait();
+    void stop();
+
     ///当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
     virtual void OnFrontConnected();
 
@@ -55,8 +72,16 @@ public:
     virtual void OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *pForQuoteRsp);
 
 private:
-    int reqID = 0;
+    const std::string *broker, *investor, *password, *front_addr;
+    std::vector<std::string> *instruments;
+    int req_id = 0;
+    QuoteProcessor *processor;
+    CThostFtdcMdApi* ctp_api;
+
     void login();
+    void logout();
     void subscribe();
-    bool parseErrorRspInfo(CThostFtdcRspInfoField *pRspInfo);
+    bool show_error(CThostFtdcRspInfoField *pRspInfo);
 };
+
+#endif
