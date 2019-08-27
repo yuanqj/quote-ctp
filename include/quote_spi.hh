@@ -27,7 +27,6 @@ public:
     ///@param nTimeLapse 距离上次接收报文的时间
     virtual void OnHeartBeatWarning(int nTimeLapse);
 
-
     ///登录请求响应
     virtual void OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
 

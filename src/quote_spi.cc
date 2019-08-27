@@ -1,4 +1,4 @@
-#include "quote_spi.hh"
+#include "../include/quote_spi.hh"
 
 extern cmdline::parser params;
 extern CThostFtdcMdApi* quoteApi;

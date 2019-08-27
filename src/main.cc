@@ -14,7 +14,7 @@
 #include <cmdline/cmdline.h>
 #include <concurrentqueue/concurrentqueue.h>
 #include <restclient-cpp/restclient.h>
-#include "quote_spi.hh"
+#include "../include/quote_spi.hh"
 
 #define PROCESSOR_COUNT 2
 
