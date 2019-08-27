@@ -21,7 +21,7 @@ private:
     boost::filesystem::path data_path;
     std::thread *processor;
     std::atomic<bool> *running;
-    moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> *buff;
+    moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*> *buff = nullptr;
 
     void process();
 };

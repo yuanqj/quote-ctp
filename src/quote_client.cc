@@ -20,6 +20,13 @@ std::string parse_err_msg(TThostFtdcErrorMsgType msg) {
     return std::string(utf8_str);
 }
 
+bool show_error(CThostFtdcRspInfoField *pRspInfo) {
+    bool is_err = pRspInfo != nullptr && pRspInfo->ErrorID != 0;
+    if (is_err) std::cout << "ERROR: [" << pRspInfo->ErrorID << "]" << parse_err_msg(pRspInfo->ErrorMsg) << std::endl;
+    return is_err;
+}
+
+
 QuoteClient::QuoteClient(
         const std::string *uuid,
         const std::string *broker,
@@ -30,7 +37,7 @@ QuoteClient::QuoteClient(
         const std::string *path_conn,
         const std::string *path_data
 ) {
-    std::cout << std::endl << "CTPAPI Version: \"" << CThostFtdcMdApi::GetApiVersion() << "\"" << std::endl;
+    std::cout << std::endl << "CTPAPI Version: \"" << CThostFtdcMdApi::GetApiVersion() << "\"" << std::endl << std::endl;
     this->broker = broker;
     this->investor = investor;
     this->password = password;
@@ -47,6 +54,7 @@ QuoteClient::~QuoteClient() {
 }
 
 void QuoteClient::run() {
+    if (this->ctp_api == nullptr) return;
     this->ctp_api->RegisterSpi((CThostFtdcMdSpi*)this);
     char front_addr[this->front_addr->length() + 1];
     strcpy(front_addr, this->front_addr->c_str());
@@ -99,13 +107,13 @@ void QuoteClient::OnRspUserLogout(CThostFtdcUserLogoutField *pUserLogout, CThost
 }
 
 void QuoteClient::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
-    std::cout << "Subscribe: " << pSpecificInstrument->InstrumentID << std::endl;
-    this->show_error(pRspInfo);
+    std::cout << ">>>>>>>>>>>>> Subscribe: " << pSpecificInstrument->InstrumentID << std::endl;
+    show_error(pRspInfo);
 }
 
 void QuoteClient::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
-    std::cout << "Unsubscribe: " << pSpecificInstrument->InstrumentID << std::endl;
-    this->show_error(pRspInfo);
+    std::cout << ">>>>>>>>>>>>> Unsubscribe: " << pSpecificInstrument->InstrumentID << std::endl;
+    show_error(pRspInfo);
 }
 
 void QuoteClient::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketData) {
@@ -118,7 +126,7 @@ void QuoteClient::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMar
 }
 
 void QuoteClient::OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
-    std::cout << "Subscribe: " << pSpecificInstrument->InstrumentID << " " << parse_err_msg(pRspInfo->ErrorMsg) << std::endl;
+    std::cout << "FUNC: " << __FUNCTION__ << std::endl;
 }
 
 void QuoteClient::OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
@@ -152,10 +160,4 @@ void QuoteClient::subscribe() {
         strcpy(instruments[i], this->instruments->at(i).c_str());
     }
     this->ctp_api->SubscribeMarketData(instruments, count);
-}
-
-bool QuoteClient::show_error(CThostFtdcRspInfoField *pRspInfo) {
-    bool is_err = pRspInfo != nullptr && pRspInfo->ErrorID != 0;
-    if (is_err) std::cout << "ERROR: ID=" << pRspInfo->ErrorID<< ", Msg=" << parse_err_msg(pRspInfo->ErrorMsg) << std::endl;
-    return is_err;
 }

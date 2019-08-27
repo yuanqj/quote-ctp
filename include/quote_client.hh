@@ -73,15 +73,14 @@ public:
 
 private:
     const std::string *broker, *investor, *password, *front_addr;
-    std::vector<std::string> *instruments;
+    std::vector<std::string> *instruments = nullptr;
     int req_id = 0;
-    QuoteProcessor *processor;
-    CThostFtdcMdApi* ctp_api;
+    QuoteProcessor *processor = nullptr;
+    CThostFtdcMdApi *ctp_api = nullptr;
 
     void login();
     void logout();
     void subscribe();
-    bool show_error(CThostFtdcRspInfoField *pRspInfo);
 };
 
 #endif
