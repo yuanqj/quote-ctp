@@ -38,19 +38,25 @@ QuoteClient::QuoteClient(
         const std::string *path_data
 ) {
     std::cout << std::endl << "CTPAPI Version: \"" << CThostFtdcMdApi::GetApiVersion() << "\"" << std::endl << std::endl;
+    this->uuid = uuid;
     this->broker = broker;
     this->investor = investor;
     this->password = password;
     this->front_addr = front_addr;
     this->instruments = instruments;
+    this->conn_path = path_conn;
     this->processor = new QuoteProcessor(path_data);
 
-    boost::filesystem::path conn_path(*path_conn), conn_prefix(*uuid + "_");
+    boost::filesystem::path conn_path(*this->conn_path), conn_prefix(*uuid + "_");
     this->ctp_api = CThostFtdcMdApi::CreateFtdcMdApi((conn_path/conn_prefix).c_str());
 }
 
 QuoteClient::~QuoteClient() {
     delete(this->processor);
+    boost::filesystem::path conn_path(*this->conn_path);
+    boost::filesystem::remove(conn_path/boost::filesystem::path(*this->uuid + "_DialogRsp.con"));
+    boost::filesystem::remove(conn_path/boost::filesystem::path(*this->uuid + "_QueryRsp.con"));
+    boost::filesystem::remove(conn_path/boost::filesystem::path(*this->uuid + "_TradingDay.con"));
 }
 
 void QuoteClient::run() {
@@ -95,7 +101,8 @@ void QuoteClient::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, b
 void QuoteClient::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
     if (bIsLast && !show_error(pRspInfo)) {
         auto date = (uint)strtol(pRspUserLogin->TradingDay, nullptr, 10);
-        std::cout << "OnRspUserLogin: " << date <<std::endl;
+        std::cout << "OnRspUserLogin" << std::endl;
+        std::cout <<std::endl << "************* TradingDate: " << date <<std::endl <<std::endl;
         this->processor->set_date(date);
         this->subscribe();
     }
@@ -109,6 +116,7 @@ void QuoteClient::OnRspUserLogout(CThostFtdcUserLogoutField *pUserLogout, CThost
 void QuoteClient::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
     std::cout << ">>>>>>>>>>>>> Subscribe: " << pSpecificInstrument->InstrumentID << std::endl;
     show_error(pRspInfo);
+    if (bIsLast) std::cout << std::endl;
 }
 
 void QuoteClient::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *pSpecificInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {

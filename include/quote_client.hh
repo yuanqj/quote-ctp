@@ -72,7 +72,7 @@ public:
     virtual void OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *pForQuoteRsp);
 
 private:
-    const std::string *broker, *investor, *password, *front_addr;
+    const std::string *uuid, *broker, *investor, *password, *front_addr, *conn_path;
     std::vector<std::string> *instruments = nullptr;
     int req_id = 0;
     QuoteProcessor *processor = nullptr;

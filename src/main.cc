@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     );
     client->run();
 
-    std::cout << std::endl << "Quote-CTP Ends: " << *uuid << std::endl;
+    std::cout << std::endl << "Quote-CTP Ends: " << *uuid << std::endl << std::endl;
     delete(client);
     delete(params);
     delete(instruments);
