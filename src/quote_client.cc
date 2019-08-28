@@ -45,7 +45,7 @@ QuoteClient::QuoteClient(
     this->front_addr = front_addr;
     this->instruments = instruments;
     this->conn_path = path_conn;
-    this->processor = new QuoteProcessor(path_data);
+    this->processor = new QuoteProcessor(path_data, instruments);
 
     boost::filesystem::path conn_path(*this->conn_path), conn_prefix(*uuid + "_");
     this->ctp_api = CThostFtdcMdApi::CreateFtdcMdApi((conn_path/conn_prefix).c_str());

@@ -9,7 +9,7 @@
 
 class QuoteProcessor {
 public:
-    QuoteProcessor(const std::string *data_path);
+    QuoteProcessor(const std::string *data_path, std::vector<std::string> *instruments);
     ~QuoteProcessor();
     void set_date(uint date);
     bool on_tick(CThostFtdcDepthMarketDataField *tick);
@@ -18,6 +18,7 @@ public:
 
 private:
     std::atomic<uint> *date;
+    std::vector<std::string> *instruments;
     boost::filesystem::path data_path;
     std::thread *processor;
     std::atomic<bool> *running;
