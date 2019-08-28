@@ -3,7 +3,50 @@
 #include <spdlog/spdlog.h>
 
 const double MAX = 1e50;
-const char *tick_temp = "{}T{}.{:03d}, {}, {}, {}, {}, {}, {}, {}, {:.7f}, {}, {}, {}, {}, {:.7f}, {:.7f}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}";
+const char *tick_temp = "{}T{}.{:03d}"
+                        ", {}"    //TradingDay
+                        ", {}"     //InstrumentID
+                        ", {}"     //ExchangeID
+                        ", {}"     //ExchangeInstID
+                        ", {:.5f}" //LastPrice
+                        ", {:.5f}" //PreSettlementPrice
+                        ", {:.5f}" //PreClosePrice
+                        ", {:.5f}" //PreOpenInterest
+                        ", {:.5f}" //OpenPrice
+                        ", {:.5f}" //HighestPrice
+                        ", {:.5f}" //LowestPrice
+                        ", {}"     //Volume
+                        ", {:.5f}" //Turnover
+                        ", {:.5f}" //OpenInterest
+                        ", {:.5f}" //ClosePrice
+                        ", {:.5f}" //SettlementPrice
+                        ", {:.5f}" //UpperLimitPrice
+                        ", {:.5f}" //LowerLimitPrice
+                        ", {:.5f}" //PreDelta
+                        ", {:.5f}" //CurrDelta
+                        ", {:.5f}" //BidPrice1
+                        ", {}"     //BidVolume1
+                        ", {:.5f}" //AskPrice1
+                        ", {}"     //AskVolume1
+                        ", {:.5f}" //BidPrice2
+                        ", {}"     //BidVolume2
+                        ", {:.5f}" //AskPrice2
+                        ", {}"     //AskVolume2
+                        ", {:.5f}" //BidPrice3
+                        ", {}"     //BidVolume3
+                        ", {:.5f}" //AskPrice3
+                        ", {}"     //AskVolume3
+                        ", {:.5f}" //BidPrice4
+                        ", {}"     //BidVolume4
+                        ", {:.5f}" //AskPrice4
+                        ", {}"     //AskVolume4
+                        ", {:.5f}" //BidPrice5
+                        ", {}"     //BidVolume5
+                        ", {:.5f}" //AskPrice5
+                        ", {}"     //AskVolume5
+                        ", {:.5f}" //AveragePrice
+                        ", {}";    //ActionDay
+
 
 /*** CThostFtdcDepthMarketDataField:
  * SHFE, INE, CFE
