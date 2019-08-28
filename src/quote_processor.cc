@@ -2,7 +2,8 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 
-const char *tick_temp = "{}T{}.{:03d}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}";
+const double MAX = 1e50;
+const char *tick_temp = "{}T{}.{:03d}, {}, {}, {}, {}, {}, {}, {}, {:.7f}, {}, {}, {}, {}, {:.7f}, {:.7f}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}";
 
 /*** CThostFtdcDepthMarketDataField:
  * SHFE, INE, CFE
@@ -17,7 +18,7 @@ const char *tick_temp = "{}T{}.{:03d}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {
  */
 static inline uint filter(TThostFtdcTimeType time_str, TThostFtdcPriceType price, TThostFtdcVolumeType volume) {
     // Invalid price
-    if (price < 1e-7) return 0;
+    if (price < 1e-7 || price>MAX) return 0;
 
     time_t now = time(nullptr);
     struct tm tm = {0};
@@ -107,6 +108,34 @@ void QuoteProcessor::process() {
                 std::cout << "Unknown Instrument: " << tick->InstrumentID << std::endl;
                 continue;
             }
+
+            if (tick->LastPrice>MAX) tick->LastPrice=0;
+            if (tick->PreSettlementPrice>MAX) tick->PreSettlementPrice=0;
+            if (tick->PreClosePrice>MAX) tick->PreClosePrice=0;
+            if (tick->PreOpenInterest>MAX) tick->PreOpenInterest=0;
+            if (tick->OpenPrice>MAX) tick->OpenPrice=0;
+            if (tick->HighestPrice>MAX) tick->HighestPrice=0;
+            if (tick->LowestPrice>MAX) tick->LowestPrice=0;
+            if (tick->Turnover>MAX) tick->Turnover=0;
+            if (tick->OpenInterest>MAX) tick->OpenInterest=0;
+            if (tick->ClosePrice>MAX) tick->ClosePrice=0;
+            if (tick->SettlementPrice>MAX) tick->SettlementPrice=0;
+            if (tick->UpperLimitPrice>MAX) tick->UpperLimitPrice=0;
+            if (tick->LowerLimitPrice>MAX) tick->LowerLimitPrice=0;
+            if (tick->PreDelta>MAX) tick->PreDelta=0;
+            if (tick->CurrDelta>MAX) tick->CurrDelta=0;
+            if (tick->AveragePrice>MAX) tick->AveragePrice=0;
+            if (tick->AskVolume1<=0) tick->AskPrice1=0;
+            if (tick->AskVolume2<=0) tick->AskPrice2=0;
+            if (tick->AskVolume3<=0) tick->AskPrice3=0;
+            if (tick->AskVolume4<=0) tick->AskPrice4=0;
+            if (tick->AskVolume5<=0) tick->AskPrice5=0;
+            if (tick->BidVolume1<=0) tick->BidPrice1=0;
+            if (tick->BidVolume2<=0) tick->BidPrice2=0;
+            if (tick->BidVolume3<=0) tick->BidPrice3=0;
+            if (tick->BidVolume4<=0) tick->BidPrice4=0;
+            if (tick->BidVolume5<=0) tick->BidPrice5=0;
+
             logger->info(
                     tick_temp,
                     date,
