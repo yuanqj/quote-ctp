@@ -3,49 +3,42 @@
 #include <spdlog/spdlog.h>
 
 const double MAX = 1e50;
-const char *tick_temp = "{}T{}.{:03d}"
-                        ", {}"    //TradingDay
-                        ", {}"     //InstrumentID
-                        ", {}"     //ExchangeID
-                        ", {}"     //ExchangeInstID
-                        ", {:.5f}" //LastPrice
-                        ", {:.5f}" //PreSettlementPrice
-                        ", {:.5f}" //PreClosePrice
-                        ", {:.5f}" //PreOpenInterest
-                        ", {:.5f}" //OpenPrice
-                        ", {:.5f}" //HighestPrice
-                        ", {:.5f}" //LowestPrice
-                        ", {}"     //Volume
-                        ", {:.5f}" //Turnover
-                        ", {:.5f}" //OpenInterest
-                        ", {:.5f}" //ClosePrice
-                        ", {:.5f}" //SettlementPrice
-                        ", {:.5f}" //UpperLimitPrice
-                        ", {:.5f}" //LowerLimitPrice
-                        ", {:.5f}" //PreDelta
-                        ", {:.5f}" //CurrDelta
-                        ", {:.5f}" //BidPrice1
-                        ", {}"     //BidVolume1
-                        ", {:.5f}" //AskPrice1
-                        ", {}"     //AskVolume1
-                        ", {:.5f}" //BidPrice2
-                        ", {}"     //BidVolume2
-                        ", {:.5f}" //AskPrice2
-                        ", {}"     //AskVolume2
-                        ", {:.5f}" //BidPrice3
-                        ", {}"     //BidVolume3
-                        ", {:.5f}" //AskPrice3
-                        ", {}"     //AskVolume3
-                        ", {:.5f}" //BidPrice4
-                        ", {}"     //BidVolume4
-                        ", {:.5f}" //AskPrice4
-                        ", {}"     //AskVolume4
-                        ", {:.5f}" //BidPrice5
-                        ", {}"     //BidVolume5
-                        ", {:.5f}" //AskPrice5
-                        ", {}"     //AskVolume5
-                        ", {:.5f}" //AveragePrice
-                        ", {}";    //ActionDay
+const char *tick_temp = "{}T{}.{:03d}"  // TickTime
+                        ", {}"     // LastPrice
+                        ", {}"     // PreSettlementPrice
+                        ", {}"     // PreClosePrice
+                        ", {:.0f}" // PreOpenInterest
+                        ", {}"     // OpenPrice
+                        ", {}"     // HighestPrice
+                        ", {}"     // LowestPrice
+                        ", {}"     // Volume
+                        ", {:.1f}" // Turnover
+                        ", {:.0f}" // OpenInterest
+                        ", {}"     // ClosePrice
+                        ", {}"     // SettlementPrice
+                        ", {}"     // UpperLimitPrice
+                        ", {}"     // LowerLimitPrice
+                        ", {}"     // BidPrice1
+                        ", {}"     // BidVolume1
+                        ", {}"     // AskPrice1
+                        ", {}"     // AskVolume1
+                        ", {}"     // BidPrice2
+                        ", {}"     // BidVolume2
+                        ", {}"     // AskPrice2
+                        ", {}"     // AskVolume2
+                        ", {}"     // BidPrice3
+                        ", {}"     // BidVolume3
+                        ", {}"     // AskPrice3
+                        ", {}"     // AskVolume3
+                        ", {}"     // BidPrice4
+                        ", {}"     // BidVolume4
+                        ", {}"     // AskPrice4
+                        ", {}"     // AskVolume4
+                        ", {}"     // BidPrice5
+                        ", {}"     // BidVolume5
+                        ", {}"     // AskPrice5
+                        ", {}"     // AskVolume5
+                        ", {:.3f}";     // AveragePrice
 
 
 /*** CThostFtdcDepthMarketDataField:
@@ -59,7 +52,7 @@ const char *tick_temp = "{}T{}.{:03d}"
  *     TradingDay: 行情日
  *     ActionDay: 行情日
  */
-static inline uint filter(TThostFtdcTimeType time_str, TThostFtdcPriceType price, TThostFtdcVolumeType volume) {
+static inline uint filter(TThostFtdcTimeType time_str, TThostFtdcPriceType price) {
     // Invalid price
     if (price < 1e-7 || price>MAX) return 0;
 
@@ -68,12 +61,12 @@ static inline uint filter(TThostFtdcTimeType time_str, TThostFtdcPriceType price
     localtime_r(&now, &tm);
 
     // Invalid tick in non-trading periods
-    bool non_trading = (tm.tm_wday==6 && tm.tm_hour>5) ||
+    bool non_trading = (tm.tm_wday==6 && tm.tm_hour>4) ||
                        tm.tm_wday==0 ||
                        (tm.tm_wday==1 && tm.tm_hour<8) ||
-                       (tm.tm_hour>5 && tm.tm_hour<8) ||
-                       (tm.tm_hour>=17 && tm.tm_hour<20);
-    if (non_trading && volume > 1e-3) return 0;
+                       (tm.tm_hour>4 && tm.tm_hour<8) ||
+                       (tm.tm_hour>16 && tm.tm_hour<20);
+    if (non_trading) return 0;
 
     char **time_ptr = &time_str;
     auto h=(int)strtol(*time_ptr, time_ptr+2, 10);
@@ -82,7 +75,6 @@ static inline uint filter(TThostFtdcTimeType time_str, TThostFtdcPriceType price
         now -= 3600;
     } else if (h==0 && tm.tm_hour==23) {
         now += 3600;
-    } else if (volume < 1e-3) {
     } else { // Invalid time
         return 0;
     }
@@ -120,6 +112,8 @@ void QuoteProcessor::set_date(uint date) {
     boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date));
     boost::filesystem::create_directory(data_dir);
     for (const auto &instrument : *this->instruments) {
+        auto logger = spdlog::get(instrument);
+        if (logger) continue;
         boost::filesystem::path data_file = data_dir/boost::filesystem::path(instrument+".csv");
         spdlog::basic_logger_st(instrument, data_file.string());
     }
@@ -143,7 +137,7 @@ void QuoteProcessor::process() {
     CThostFtdcDepthMarketDataField* tick;
     while (this->running->load(std::memory_order_acquire)) {
         if (this->buff->try_dequeue(tick)) {
-            uint date = filter(tick->UpdateTime, tick->LastPrice, tick->Volume);
+            uint date = filter(tick->UpdateTime, tick->LastPrice);
             if (date <= 0) continue;
             printf("TICK: Code=%s, Date=%d, UpdateTime=%s, Volume=%d\n", tick->InstrumentID, date, tick->UpdateTime, tick->Volume);
             auto logger = spdlog::get(tick->InstrumentID);
@@ -165,8 +159,6 @@ void QuoteProcessor::process() {
             if (tick->SettlementPrice>MAX) tick->SettlementPrice=0;
             if (tick->UpperLimitPrice>MAX) tick->UpperLimitPrice=0;
             if (tick->LowerLimitPrice>MAX) tick->LowerLimitPrice=0;
-            if (tick->PreDelta>MAX) tick->PreDelta=0;
-            if (tick->CurrDelta>MAX) tick->CurrDelta=0;
             if (tick->AveragePrice>MAX) tick->AveragePrice=0;
             if (tick->AskVolume1<=0) tick->AskPrice1=0;
             if (tick->AskVolume2<=0) tick->AskPrice2=0;
@@ -185,10 +177,6 @@ void QuoteProcessor::process() {
                     tick->UpdateTime,
                     tick->UpdateMillisec,
 
-                    tick->TradingDay,
-                    tick->InstrumentID,
-                    tick->ExchangeID,
-                    tick->ExchangeInstID,
                     tick->LastPrice,
                     tick->PreSettlementPrice,
                     tick->PreClosePrice,
@@ -203,8 +191,6 @@ void QuoteProcessor::process() {
                     tick->SettlementPrice,
                     tick->UpperLimitPrice,
                     tick->LowerLimitPrice,
-                    tick->PreDelta,
-                    tick->CurrDelta,
                     tick->BidPrice1,
                     tick->BidVolume1,
                     tick->AskPrice1,
@@ -225,8 +211,7 @@ void QuoteProcessor::process() {
                     tick->BidVolume5,
                     tick->AskPrice5,
                     tick->AskVolume5,
-                    tick->AveragePrice,
-                    tick->ActionDay
+                    tick->AveragePrice
             );
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
