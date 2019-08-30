@@ -2,7 +2,7 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 
-const double MAX = 1e50;
+const double MAX = 1e19;
 const char *tick_temp = "{}T{}.{:03d}"  // TickTime
                         ", {}"     // LastPrice
                         ", {}"     // PreSettlementPrice
@@ -18,6 +18,8 @@ const char *tick_temp = "{}T{}.{:03d}"  // TickTime
                         ", {}"     // SettlementPrice
                         ", {}"     // UpperLimitPrice
                         ", {}"     // LowerLimitPrice
+                        ", {}"     // PreDelta
+                        ", {}"     // CurrDelta
                         ", {}"     // BidPrice1
                         ", {}"     // BidVolume1
                         ", {}"     // AskPrice1
@@ -109,8 +111,8 @@ void QuoteProcessor::set_date(uint date) {
     this->date->store(date, std::memory_order_acquire);
     if (date == 0) return;
 
-    boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date));
-    boost::filesystem::create_directory(data_dir);
+    boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date/100))/boost::filesystem::path(std::to_string(date));
+    boost::filesystem::create_directories(data_dir);
     for (const auto &instrument : *this->instruments) {
         auto logger = spdlog::get(instrument);
         if (logger) continue;
@@ -139,7 +141,7 @@ void QuoteProcessor::process() {
         if (this->buff->try_dequeue(tick)) {
             uint date = filter(tick->UpdateTime, tick->LastPrice);
             if (date <= 0) continue;
-            printf("TICK: Code=%s, Date=%d, UpdateTime=%s, Volume=%d\n", tick->InstrumentID, date, tick->UpdateTime, tick->Volume);
+//            printf("TICK: Code=%s, Date=%d, UpdateTime=%s, Volume=%d\n", tick->InstrumentID, date, tick->UpdateTime, tick->Volume);
             auto logger = spdlog::get(tick->InstrumentID);
             if (logger == nullptr) {
                 std::cout << "Unknown Instrument: " << tick->InstrumentID << std::endl;
@@ -159,6 +161,8 @@ void QuoteProcessor::process() {
             if (tick->SettlementPrice>MAX) tick->SettlementPrice=0;
             if (tick->UpperLimitPrice>MAX) tick->UpperLimitPrice=0;
             if (tick->LowerLimitPrice>MAX) tick->LowerLimitPrice=0;
+            if (tick->PreDelta>MAX) tick->PreDelta=0;
+            if (tick->CurrDelta>MAX) tick->CurrDelta=0;
             if (tick->AveragePrice>MAX) tick->AveragePrice=0;
             if (tick->AskVolume1<=0) tick->AskPrice1=0;
             if (tick->AskVolume2<=0) tick->AskPrice2=0;
@@ -191,6 +195,8 @@ void QuoteProcessor::process() {
                     tick->SettlementPrice,
                     tick->UpperLimitPrice,
                     tick->LowerLimitPrice,
+                    tick->PreDelta,
+                    tick->CurrDelta,
                     tick->BidPrice1,
                     tick->BidVolume1,
                     tick->AskPrice1,

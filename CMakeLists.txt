@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(quote_fut_cn_ctp)
+project(quote_ctp)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 11)

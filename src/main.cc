@@ -13,12 +13,11 @@ QuoteClient *client;
 
 
 int main(int argc, char** argv) {
+    cmdline::parser *params = config_cli(argc, argv);
     std::string *uuid = gen_uuid();
     std::cout << std::endl << "Quote-CTP Starts: " << *uuid << std::endl;
-
     signal(SIGINT, term_sig_handler);
     signal(SIGTERM, term_sig_handler);
-    cmdline::parser *params = config_cli(argc, argv);
 
     auto instruments = parse_instruments(&params->get<std::string>("instruments"), ';');
     client = new QuoteClient(
