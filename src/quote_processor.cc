@@ -5,43 +5,43 @@
 
 const double MAX = 1e19;
 const char *tick_temp = "{}T{}.{:03d}"  // TickTime
-                        ", {:.5f}"      //LastPrice
-                        ", {:.5f}"      //PreSettlementPrice
-                        ", {:.5f}"      //PreClosePrice
-                        ", {:.5f}"      //PreOpenInterest
-                        ", {:.5f}"      //OpenPrice
-                        ", {:.5f}"      //HighestPrice
-                        ", {:.5f}"      //LowestPrice
+                        ", {:.4f}"      //LastPrice
+                        ", {:.4f}"      //PreSettlementPrice
+                        ", {:.4f}"      //PreClosePrice
+                        ", {:.4f}"      //PreOpenInterest
+                        ", {:.4f}"      //OpenPrice
+                        ", {:.4f}"      //HighestPrice
+                        ", {:.4f}"      //LowestPrice
                         ", {}"          //Volume
-                        ", {:.5f}"      //Turnover
-                        ", {:.5f}"      //OpenInterest
-                        ", {:.5f}"      //ClosePrice
-                        ", {:.5f}"      //SettlementPrice
-                        ", {:.5f}"      //UpperLimitPrice
-                        ", {:.5f}"      //LowerLimitPrice
-                        ", {:.5f}"      //PreDelta
-                        ", {:.5f}"      //CurrDelta
-                        ", {:.5f}"      //BidPrice1
+                        ", {:.4f}"      //Turnover
+                        ", {:.4f}"      //OpenInterest
+                        ", {:.4f}"      //ClosePrice
+                        ", {:.4f}"      //SettlementPrice
+                        ", {:.4f}"      //UpperLimitPrice
+                        ", {:.4f}"      //LowerLimitPrice
+                        ", {:.8f}"      //PreDelta
+                        ", {:.8f}"      //CurrDelta
+                        ", {:.4f}"      //BidPrice1
                         ", {}"          //BidVolume1
-                        ", {:.5f}"      //AskPrice1
+                        ", {:.4f}"      //AskPrice1
                         ", {}"          //AskVolume1
-                        ", {:.5f}"      //BidPrice2
+                        ", {:.4f}"      //BidPrice2
                         ", {}"          //BidVolume2
-                        ", {:.5f}"      //AskPrice2
+                        ", {:.4f}"      //AskPrice2
                         ", {}"          //AskVolume2
-                        ", {:.5f}"      //BidPrice3
+                        ", {:.4f}"      //BidPrice3
                         ", {}"          //BidVolume3
-                        ", {:.5f}"      //AskPrice3
+                        ", {:.4f}"      //AskPrice3
                         ", {}"          //AskVolume3
-                        ", {:.5f}"      //BidPrice4
+                        ", {:.4f}"      //BidPrice4
                         ", {}"          //BidVolume4
-                        ", {:.5f}"      //AskPrice4
+                        ", {:.4f}"      //AskPrice4
                         ", {}"          //AskVolume4
-                        ", {:.5f}"      //BidPrice5
+                        ", {:.4f}"      //BidPrice5
                         ", {}"          //BidVolume5
-                        ", {:.5f}"      //AskPrice5
+                        ", {:.4f}"      //AskPrice5
                         ", {}"          //AskVolume5
-                        ", {:.5f}";      //AveragePrice
+                        ", {:.4f}";     //AveragePrice
 
 
 /*** CThostFtdcDepthMarketDataField:
