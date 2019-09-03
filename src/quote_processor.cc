@@ -4,43 +4,43 @@
 
 const double MAX = 1e19;
 const char *tick_temp = "{}T{}.{:03d}"  // TickTime
-                        ", {}"     // LastPrice
-                        ", {}"     // PreSettlementPrice
-                        ", {}"     // PreClosePrice
-                        ", {:.0f}" // PreOpenInterest
-                        ", {}"     // OpenPrice
-                        ", {}"     // HighestPrice
-                        ", {}"     // LowestPrice
-                        ", {}"     // Volume
-                        ", {:.1f}" // Turnover
-                        ", {:.0f}" // OpenInterest
-                        ", {}"     // ClosePrice
-                        ", {}"     // SettlementPrice
-                        ", {}"     // UpperLimitPrice
-                        ", {}"     // LowerLimitPrice
-                        ", {}"     // PreDelta
-                        ", {}"     // CurrDelta
-                        ", {}"     // BidPrice1
-                        ", {}"     // BidVolume1
-                        ", {}"     // AskPrice1
-                        ", {}"     // AskVolume1
-                        ", {}"     // BidPrice2
-                        ", {}"     // BidVolume2
-                        ", {}"     // AskPrice2
-                        ", {}"     // AskVolume2
-                        ", {}"     // BidPrice3
-                        ", {}"     // BidVolume3
-                        ", {}"     // AskPrice3
-                        ", {}"     // AskVolume3
-                        ", {}"     // BidPrice4
-                        ", {}"     // BidVolume4
-                        ", {}"     // AskPrice4
-                        ", {}"     // AskVolume4
-                        ", {}"     // BidPrice5
-                        ", {}"     // BidVolume5
-                        ", {}"     // AskPrice5
-                        ", {}"     // AskVolume5
-                        ", {:.3f}";     // AveragePrice
+                        ", {:.5f}"      //LastPrice
+                        ", {:.5f}"      //PreSettlementPrice
+                        ", {:.5f}"      //PreClosePrice
+                        ", {:.5f}"      //PreOpenInterest
+                        ", {:.5f}"      //OpenPrice
+                        ", {:.5f}"      //HighestPrice
+                        ", {:.5f}"      //LowestPrice
+                        ", {}"          //Volume
+                        ", {:.5f}"      //Turnover
+                        ", {:.5f}"      //OpenInterest
+                        ", {:.5f}"      //ClosePrice
+                        ", {:.5f}"      //SettlementPrice
+                        ", {:.5f}"      //UpperLimitPrice
+                        ", {:.5f}"      //LowerLimitPrice
+                        ", {:.5f}"      //PreDelta
+                        ", {:.5f}"      //CurrDelta
+                        ", {:.5f}"      //BidPrice1
+                        ", {}"          //BidVolume1
+                        ", {:.5f}"      //AskPrice1
+                        ", {}"          //AskVolume1
+                        ", {:.5f}"      //BidPrice2
+                        ", {}"          //BidVolume2
+                        ", {:.5f}"      //AskPrice2
+                        ", {}"          //AskVolume2
+                        ", {:.5f}"      //BidPrice3
+                        ", {}"          //BidVolume3
+                        ", {:.5f}"      //AskPrice3
+                        ", {}"          //AskVolume3
+                        ", {:.5f}"      //BidPrice4
+                        ", {}"          //BidVolume4
+                        ", {:.5f}"      //AskPrice4
+                        ", {}"          //AskVolume4
+                        ", {:.5f}"      //BidPrice5
+                        ", {}"          //BidVolume5
+                        ", {:.5f}"      //AskPrice5
+                        ", {}"          //AskVolume5
+                        ", {:.5f}";      //AveragePrice
 
 
 /*** CThostFtdcDepthMarketDataField:
@@ -111,7 +111,7 @@ void QuoteProcessor::set_date(uint date) {
     this->date->store(date, std::memory_order_acquire);
     if (date == 0) return;
 
-    boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date/100))/boost::filesystem::path(std::to_string(date));
+    boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date));
     boost::filesystem::create_directories(data_dir);
     for (const auto &instrument : *this->instruments) {
         auto logger = spdlog::get(instrument);
