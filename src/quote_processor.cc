@@ -1,6 +1,7 @@
 #include "quote_processor.hh"
 #include <iostream>
-#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/async.h>
 
 const double MAX = 1e19;
 const char *tick_temp = "{}T{}.{:03d}"  // TickTime
@@ -89,10 +90,11 @@ QuoteProcessor::QuoteProcessor(const std::string *data_path, std::vector<std::st
     this->instruments = instruments;
     this->running = new std::atomic<bool>(true);
     this->date = new std::atomic<uint>(0);
-    this->buff = new moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*>(1024);
+    this->buff = new moodycamel::ConcurrentQueue<CThostFtdcDepthMarketDataField*>(65536);
     this->processor = new std::thread(&QuoteProcessor::process, this);
 
-    spdlog::set_async_mode(8192, spdlog::async_overflow_policy::block_retry, nullptr, std::chrono::seconds(3));
+    spdlog::init_thread_pool(65536, 2);
+    spdlog::flush_every(std::chrono::seconds(7));
     spdlog::set_pattern("%v");
 }
 
@@ -111,13 +113,12 @@ void QuoteProcessor::set_date(uint date) {
     this->date->store(date, std::memory_order_acquire);
     if (date == 0) return;
 
+    spdlog::drop_all();
     boost::filesystem::path data_dir=this->data_path/boost::filesystem::path(std::to_string(date));
     boost::filesystem::create_directories(data_dir);
     for (const auto &instrument : *this->instruments) {
-        auto logger = spdlog::get(instrument);
-        if (logger) continue;
         boost::filesystem::path data_file = data_dir/boost::filesystem::path(instrument+".csv");
-        spdlog::basic_logger_st(instrument, data_file.string());
+        spdlog::basic_logger_st<spdlog::async_factory>(instrument, data_file.string());
     }
 }
 

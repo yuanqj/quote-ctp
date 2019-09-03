@@ -38,9 +38,9 @@ int main(int argc, char** argv) {
 
     std::cout << "Quote-CTP Ends: " << *uuid << std::endl;
     delete(client);
-    delete(params);
     delete(instruments);
     delete(uuid);
+    delete(params);
     return 0;
 }
 
